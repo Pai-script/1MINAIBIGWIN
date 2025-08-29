@@ -1,0 +1,22 @@
+{
+  "name": "bot-telegram-bot",
+  "version": "1.0.0",
+  "description": "Telegram bot for BIGWIN 1MIN predictions",
+  "main": "ckbot.js",
+  "scripts": {
+    "start": "node ckbot.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "node-telegram-bot-api": "^0.61.0",
+    "axios": "^1.6.0"
+  },
+  "keywords": [
+    "telegram",
+    "bot",
+    "prediction",
+    "lottery"
+  ],
+  "author": "Pai-Script",
+  "license": "MIT"
+}
