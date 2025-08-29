@@ -114,7 +114,7 @@ async function getPredictionWithGemini(results) {
     
     const prompt = `
       Analyze these BIG/SMALL lottery results and predict the next outcome (BIG or SMALL).
-      The results are from a game where numbers 1-8 are drawn, with 1-4 being SMALL and 5-8 being BIG.
+      The results are from a game where numbers 1-9 are drawn, with 0-4 being SMALL and 5-9 being BIG.
       
       Previous results: ${JSON.stringify(formattedResults)}
       
