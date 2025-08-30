@@ -1,18 +1,29 @@
 {
   "name": "bigwin-predictor-bot",
   "version": "1.0.0",
-  "description": "Telegram AI-powered lottery predictor bot",
-  "main": "bigwin.js",
+  "description": "Telegram bot for BIGWIN predictions with dual AI support",
+  "main": "ai.js",
   "scripts": {
-    "start": "node bigwin.js"
+    "start": "node ai.js",
+    "dev": "nodemon ai.js"
   },
+  "keywords": [
+    "telegram",
+    "bot",
+    "prediction",
+    "ai",
+    "gemini",
+    "openai"
+  ],
+  "author": "Developer",
+  "license": "MIT",
   "dependencies": {
-    "axios": "^1.6.8",
-    "node-telegram-bot-api": "^0.63.0",
-    "@google/generative-ai": "^0.16.0"
+    "node-telegram-bot-api": "^0.64.0",
+    "axios": "^1.6.0",
+    "@google/generative-ai": "^0.2.1",
+    "openai": "^4.20.1"
   },
   "engines": {
-    "node": ">=18"
-  },
-  "license": "MIT"
+    "node": ">=18.0.0"
+  }
 }
