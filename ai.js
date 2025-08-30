@@ -21,8 +21,8 @@ const userSettings = new Map();
 
 // ================== PREDICTION TRACKING ==================
 const userStats = new Map();
-const predictionHistory = new Map();
-const lastKnownResults = new Map();
+const predictionHistory = new Map(); // Stores {prediction, forIssue}
+const lastKnownResults = new Map(); // Stores last processed issue number
 const lastOutcomes = new Map();
 const recentPredictions = new Map(); // Store last 20 predictions
 
@@ -431,9 +431,8 @@ async function broadcastPrediction() {
     if (user.subscribed && verifiedUsers.has(chatId)) {
       try {
         // Check if we have a previous PREDICTION to compare with the PREVIOUS RESULT
-        // We only check outcome if we have a new result (currentResult's issue is different from the last one we processed)
-        if (predictionHistory.has(chatId) && lastKnownResults.has(chatId)) {
-          const lastPrediction = predictionHistory.get(chatId);
+        if (predictionHistory.has(chatId)) {
+          const lastPredictionData = predictionHistory.get(chatId);
           const lastProcessedResultIssue = lastKnownResults.get(chatId);
 
           // Only process the outcome if we haven't processed this result yet
@@ -441,13 +440,17 @@ async function broadcastPrediction() {
           if (currentResult.issueNumber !== lastProcessedResultIssue) {
             // We compare our last prediction against the PREVIOUS result
             // Because the last prediction was meant for the period that just ended (previousResult)
-            const outcome = updateUserStats(chatId, lastPrediction, previousResult.result);
-            lastOutcomes.set(chatId, { prediction: lastPrediction, actual: previousResult.result, outcome });
-            addToRecentPredictions(chatId, lastPrediction, previousResult.result, outcome, previousResult.issueNumber);
+            const outcome = updateUserStats(chatId, lastPredictionData.prediction, previousResult.result);
+            lastOutcomes.set(chatId, { 
+              prediction: lastPredictionData.prediction, 
+              actual: previousResult.result, 
+              outcome 
+            });
+            addToRecentPredictions(chatId, lastPredictionData.prediction, previousResult.result, outcome, previousResult.issueNumber);
 
             // Send the outcome notification for the previous round
             await bot.sendMessage(chatId,
-              `🎯 Last Prediction: *${lastPrediction}*\n🎲 Actual Result: *${previousResult.result}* (${previousResult.actualNumber})\n📊 Outcome: ${outcome === "WIN" ? "✅ WIN!" : "❌ LOSE"}`,
+              `🎯 Last Prediction: *${lastPredictionData.prediction}*\n🎲 Actual Result: *${previousResult.result}* (${previousResult.actualNumber})\n📊 Outcome: ${outcome === "WIN" ? "✅ WIN!" : "❌ LOSE"}`,
               { parse_mode: 'Markdown', reply_markup: mainKeyboard }
             );
           }
@@ -456,13 +459,25 @@ async function broadcastPrediction() {
         // Get new prediction for the NEXT round (after currentResult)
         const predictionResult = await getPredictionForUser(chatId);
         if (predictionResult.prediction !== "UNKNOWN") {
-          // Store the new prediction and update the last known result to the CURRENT one
-          predictionHistory.set(chatId, predictionResult.prediction);
+          // Store the new prediction AND the result it's meant for
+          predictionHistory.set(chatId, {
+            prediction: predictionResult.prediction,
+            forIssue: currentResult.issueNumber // This prediction is for the period that just started
+          });
           lastKnownResults.set(chatId, currentResult.issueNumber); // Store only the issue number for comparison
 
           // Send the new prediction for the next round
-          const msg = await getPredictionMessage(chatId);
-          await bot.sendMessage(chatId, msg, { parse_mode: 'Markdown', reply_markup: mainKeyboard });
+          const issue = await fetchCurrentIssue();
+          const period = issue?.data?.issueNumber || "Unknown";
+          const now = new Date();
+          const clock = now.toLocaleTimeString('en-US', { hour12: true });
+          const userSetting = userSettings.get(chatId) || { ai: 'gemini', limit: 50 };
+
+          let message = `🎰 *BIGWIN Predictor Pro*\n📅 Period: \`${period}\`\n🕒 ${clock}\n\n`;
+          message += `🤖 AI Model: ${userSetting.ai.toUpperCase()}\n📊 History: ${userSetting.limit} results\n\n`;
+          message += `🔮 Prediction: *${predictionResult.prediction}*\n📊 Confidence: ${predictionResult.confidence}\n🧠 Formula: ${predictionResult.formulaName}`;
+
+          await bot.sendMessage(chatId, message, { parse_mode: 'Markdown', reply_markup: mainKeyboard });
         }
       } catch (err) {
         if (err.response?.statusCode === 403) {
