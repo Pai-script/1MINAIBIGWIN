@@ -274,7 +274,7 @@ function getRecentPredictions(chatId) {
   
   predictions.forEach((pred, index) => {
     const emoji = pred.outcome === "WIN" ? "✅" : "❌";
-    message += `${index + 1}. Period: ${pred.period || "Unknown"}${emoji}\n`;
+    message += `${index + 1}. ${pred.prediction} → ${pred.actual} ${emoji} (Period: ${pred.period || "Unknown"})\n`;
   });
   
   const stats = getUserStats(chatId);
