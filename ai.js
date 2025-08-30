@@ -420,37 +420,47 @@ bot.on('callback_query', (query) => {
 // ===== BROADCAST LOOP =====
 async function broadcastPrediction() {
   const currentResults = await fetchLastResults(50);
-  if (currentResults.length === 0) return;
-  const latestResult = currentResults[0];
+  if (currentResults.length < 2) return; // Need at least 2 results to compare
+
+  // Get the CURRENT result (the most recent one that just happened)
+  const currentResult = currentResults[0];
+  // Get the PREVIOUS result (the one before the current)
+  const previousResult = currentResults[1];
 
   for (const [chatId, user] of users.entries()) {
     if (user.subscribed && verifiedUsers.has(chatId)) {
       try {
-        // Check if we have a previous prediction to compare with the latest result
+        // Check if we have a previous PREDICTION to compare with the PREVIOUS RESULT
+        // We only check outcome if we have a new result (currentResult's issue is different from the last one we processed)
         if (predictionHistory.has(chatId) && lastKnownResults.has(chatId)) {
           const lastPrediction = predictionHistory.get(chatId);
-          const lastKnownResult = lastKnownResults.get(chatId);
+          const lastProcessedResultIssue = lastKnownResults.get(chatId);
 
-          // Only process if we have a new result (different issue number)
-          if (latestResult.issueNumber !== lastKnownResult.issueNumber) {
-            const outcome = updateUserStats(chatId, lastPrediction, latestResult.result);
-            lastOutcomes.set(chatId, { prediction: lastPrediction, actual: latestResult.result, outcome });
-            addToRecentPredictions(chatId, lastPrediction, latestResult.result, outcome, latestResult.issueNumber);
+          // Only process the outcome if we haven't processed this result yet
+          // i.e., if the currentResult's issue number is NEW (different from the last one we stored)
+          if (currentResult.issueNumber !== lastProcessedResultIssue) {
+            // We compare our last prediction against the PREVIOUS result
+            // Because the last prediction was meant for the period that just ended (previousResult)
+            const outcome = updateUserStats(chatId, lastPrediction, previousResult.result);
+            lastOutcomes.set(chatId, { prediction: lastPrediction, actual: previousResult.result, outcome });
+            addToRecentPredictions(chatId, lastPrediction, previousResult.result, outcome, previousResult.issueNumber);
 
-            await bot.sendMessage(chatId, 
-              `🎯 Last Prediction: *${lastPrediction}*\n🎲 Actual Result: *${latestResult.result}* (${latestResult.actualNumber})\n📊 Outcome: ${outcome === "WIN" ? "✅ WIN!" : "❌ LOSE"}`,
+            // Send the outcome notification for the previous round
+            await bot.sendMessage(chatId,
+              `🎯 Last Prediction: *${lastPrediction}*\n🎲 Actual Result: *${previousResult.result}* (${previousResult.actualNumber})\n📊 Outcome: ${outcome === "WIN" ? "✅ WIN!" : "❌ LOSE"}`,
               { parse_mode: 'Markdown', reply_markup: mainKeyboard }
             );
           }
         }
-        
-        // Get new prediction for the next round
+
+        // Get new prediction for the NEXT round (after currentResult)
         const predictionResult = await getPredictionForUser(chatId);
         if (predictionResult.prediction !== "UNKNOWN") {
+          // Store the new prediction and update the last known result to the CURRENT one
           predictionHistory.set(chatId, predictionResult.prediction);
-          lastKnownResults.set(chatId, latestResult);
-          
-          // Send the new prediction
+          lastKnownResults.set(chatId, currentResult.issueNumber); // Store only the issue number for comparison
+
+          // Send the new prediction for the next round
           const msg = await getPredictionMessage(chatId);
           await bot.sendMessage(chatId, msg, { parse_mode: 'Markdown', reply_markup: mainKeyboard });
         }
