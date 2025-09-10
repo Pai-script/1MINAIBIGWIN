@@ -4,7 +4,7 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const OpenAI = require('openai');
 
 // ================== CONFIG ==================
-const TOKEN = '8431598388:AAGG9Wg8_1jDg1kfWrf7foforlEtbkf6drI';
+const TOKEN = '8222077229:AAGvA-SCdx8EQ_nK3C3mSSR68X51JgRMU3g';
 const GEMINI_API_KEY = 'AIzaSyCX-ghiD10_Npy7uu25bzyNXGfBRGtSD4Q';
 const OPENAI_API_KEY = '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';
 const SLOT_SECONDS = 60;
